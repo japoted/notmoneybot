@@ -41,6 +41,21 @@ def _ce(eid: str, fallback: str = "⭐") -> str:
     return f'<tg-emoji emoji-id="{eid}">{fallback}</tg-emoji>'
 
 
+def _qprem(quality_emoji: str, pct: int) -> str:
+    """Качество бокса с премиум-иконкой по уровню."""
+    import re
+    clean = re.sub(r"^[^\w<]+\s*", "", quality_emoji).lstrip()
+    if pct >= 100:
+        return f"{_ce(E_DIAMOND,'💎')} {clean}"
+    if pct >= 95:
+        return f"{_ce(E_FIRE,'🔥')} {clean}"
+    if pct >= 80:
+        return f"{_ce(E_STAR,'⭐')} {clean}"
+    if pct >= 65:
+        return f"{_ce(E_CHART,'📊')} {clean}"
+    return f"{_ce(E_GLOBE,'🌐')} {clean}"
+
+
 
 router = Router()
 
@@ -310,8 +325,8 @@ async def handle_token(message: Message):
                 ctype = damage["cert_type"] or ""
 
             await msg.edit_text(
-                f"✅ <b>Бокс принят!</b>\n\n"
-                f"📊 Качество: <b>{quality_emoji}</b>\n"
+                f"{_ce(E_CHECK,'✅')} <b>Бокс принят!</b>\n\n"
+                f"{_ce(E_CHART,'📊')} Качество: <b>{_qprem(quality_emoji, quality_pct)}</b>\n"
                 f"└ Оценка: <b>{quality_pct}%</b>\n\n"
                 f"💰 Стоимость: <b>{price:,} ₽</b>"
             )
@@ -346,15 +361,15 @@ async def handle_token(message: Message):
             return
 
         product_name = order.get("product_name", "Токен")
-        pending_buybacks[user_id] = {"token": token, "price": price, "quality": quality_emoji}
+        pending_buybacks[user_id] = {"token": token, "price": price, "quality": quality_emoji, "pct": quality_pct}
 
         text = (
-            f"✅ <b>{product_name} проверен!</b>\n\n"
-            f"📊 <b>Результат проверки:</b>\n"
+            f"{_ce(E_CHECK,'✅')} <b>{product_name} проверен!</b>\n\n"
+            f"{_ce(E_CHART,'📊')} <b>Результат проверки:</b>\n"
             f"├ Товар: <b>{product_name}</b>\n"
-            f"├ Качество: <b>{quality_emoji}</b>\n"
+            f"├ Качество: <b>{_qprem(quality_emoji, quality_pct)}</b>\n"
             f"├ Оценка: <b>{quality_pct}%</b>\n"
-            f"└ Цена выкупа: <b>{price:,} ₽</b>"
+            f"└ Цена выкупа: <b>{price:,} ₽</b> {_ce(E_MONEY,'💵')}"
             f"{parts_hint}\n\n"
             f"Подтвердите обмен, чтобы получить средства на баланс."
         )
@@ -376,6 +391,7 @@ async def cb_confirm_buyback(callback: CallbackQuery):
     token = pending["token"]
     price = pending["price"]
     quality = pending["quality"]
+    pct = pending.get("pct", 0)
 
     if is_token_bought(token):
         await callback.answer("❌ Токен уже выкуплен", show_alert=True)
@@ -398,8 +414,8 @@ async def cb_confirm_buyback(callback: CallbackQuery):
     add_buyer_balance(user_id, price)
 
     text = (
-        f"🎉 <b>Токен успешно выкуплен!</b>\n\n"
-        f"📊 Качество: <b>{quality}</b>\n"
+        f"🎉 <b>Бокс успешно выкуплен!</b>\n\n"
+        f"📊 Качество: <b>{_qprem(quality, pct)}</b>\n"
         f"💵 Сумма выкупа: <b>{price:,} ₽</b>\n"
         f"🔑 Токен: <code>{token[:12]}...</code>\n\n"
         f"💰 Средства зачислены на ваш баланс.\n"

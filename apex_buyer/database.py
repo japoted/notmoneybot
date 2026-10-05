@@ -72,8 +72,8 @@ def lookup_token(token: str) -> dict | None:
     return {
         "id": 0,
         "token": token,
-        "product_id": "dns_eco",
-        "product_name": "ZEN-токен",
+        "product_id": "turbo",
+        "product_name": "ТУРБО-бокс",
         "status": "confirmed",
     }
 
